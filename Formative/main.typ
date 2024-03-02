@@ -14,9 +14,19 @@
 // We generated the example code below so you can see how
 // your document will look. Go ahead and replace it with
 // your own content!
-#outline()
-
+// ------------------------------------------------
+// outline part
+#set heading(numbering: "1.")
+#show outline.entry.where(level: 1): it => {
+  v(12pt, weak: true)
+  strong(it)
+}
+#outline(indent: auto)
+// ------------------------------------------------
 = Introduction
+
+#lorem(60)
+
 #lorem(60)
 
 == In this paper
