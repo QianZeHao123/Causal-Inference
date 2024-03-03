@@ -6,7 +6,7 @@
   set document(author: authors.map(a => a.name), title: title)
   set page(numbering: "1", number-align: center)
   set text(font: "Linux Libertine", lang: "en")
-
+  set heading(numbering: "1.")
   // Title row.
   align(center)[
     #block(text(weight: 700, 1.75em, title))

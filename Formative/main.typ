@@ -16,13 +16,29 @@
 // your own content!
 // ------------------------------------------------
 // outline part
-#set heading(numbering: "1.")
+#show link: underline
 #show outline.entry.where(level: 1): it => {
   v(12pt, weak: true)
   strong(it)
 }
 #outline(indent: auto)
 // ------------------------------------------------
+
+= Some links
+#link(
+  "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/RAHKNJ",
+)[Replication Data for: 'Visual Inference and Graphical Representation in
+  Regression Discontinuity Designs']
+
+#link(
+  "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/PGXO5O",
+)[Replication Data for: Regression Discontinuity Designs Based on Population
+  Thresholds: Pitfalls and Solutions]
+
+#link(
+  "https://www.science.org/doi/10.1126/sciadv.abg2652",
+)[How to make causal inferences using texts]
+
 = Introduction
 
 #lorem(60)
@@ -38,5 +54,7 @@
 = Related Work
 
 == Work 1
+
+== Work 2
 
 #lorem(500)
