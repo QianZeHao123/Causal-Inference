@@ -3,7 +3,7 @@
 // Take a look at the file `template.typ` in the file panel
 // to customize this template and discover how it works.
 #show: project.with(
-  title: "Causual Inference Formative",
+  title: "Causal Inference Formative",
   authors: ((name: "Zehao Qian", email: "zehao.qian.cn@gmail.com"),),
   // Insert your abstract after the colon, wrapped in brackets.
   // Example: `abstract: [This is my abstract...]`
@@ -38,6 +38,21 @@
 #link(
   "https://www.science.org/doi/10.1126/sciadv.abg2652",
 )[How to make causal inferences using texts]
+
+#link(
+  "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/B2ATF8",
+)[Replication Data for: Deeper Roots: Historical Causal Inference and the
+  Political Legacy of Slavery]
+
+#link(
+  "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/HJDUMY",
+)[Replication Data for: Projection in the Face of Centrism: Voter Inferences about
+  Candidates' Party Affiliation in Low-information Contexts]
+
+#link(
+  "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/VYTZAI",
+)[Replication Data for: Messages Designed to Increase Perceived Electoral
+  Closeness Increase Turnout]
 
 = Introduction
 
