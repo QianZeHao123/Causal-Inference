@@ -25,6 +25,11 @@
 // ------------------------------------------------
 
 = Some links
+
+#link("https://github.com/erikgahner/PolData")[
+  PolData: Political Data Sets and Functions
+]
+
 #link(
   "https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/RAHKNJ",
 )[Replication Data for: 'Visual Inference and Graphical Representation in

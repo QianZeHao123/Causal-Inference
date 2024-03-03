@@ -1,0 +1,85 @@
+---
+title: "Causal Inference"
+author: "Zehao Qian"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# --------------------------------------------------------
+# clear the environment var area
+rm(list = ls())
+# clear all plots
+graphics.off()
+# clear the console area
+cat("\014")
+```
+
+# **Messages Designed to Increase Perceived Electoral Closeness Increase Turnout**
+
+Stata code explanation and R code implementation.
+
+## Read the data
+
+-   read DTA file
+
+-   Transfer it from Stata data file (\*.dta) to csv format
+
+```{r}
+# library(haven)
+# data = read_dta("./ReplicationArchive/APRCloseElections_Final_Publication_Replication_Dataset.dta")
+```
+
+```{r}
+# write.csv(data, file = "./data/data.csv")
+```
+
+```{r}
+data = read.csv('./data/data.csv')
+```
+
+This Stata code is part of a replication file for a study on the effects of perceived electoral closeness on voter turnout. The code performs various statistical analyses and outputs the results. Here's a breakdown of the code, part by part:
+
+## Appendix Table A1: Balance Tests
+
+-   Multinomial logistic regression (`mlogit`) is performed to test the balance of covariates across different treatment groups. The `robust` option is used for robust standard errors, and `baseoutcome(1)` sets the reference category for the dependent variable.
+-   Local macros (`local`) are used to store statistics like p-values (`mlogitp`), degrees of freedom (`mlogitdf`), and chi-squared values (`mlogitchi`) from the model.
+-   A note (`tablenotes2`) is prepared, summarizing the balance test results, and displayed using the `display` command.
+-   `putexcel` commands are used to write the balance test results to an Excel file, creating a table with variable names, treatment groups, means, standard deviations, and the note prepared earlier.
+
+## Table 2: Differences in Election and Turnout Context Across States
+
+-   `sum` commands calculate the turnout rates for placebo subjects in various states. Local macros store these proportions.
+-   Another `putexcel` set of commands creates an Excel table summarizing these turnout rates, along with information about the primary date, number of congressional districts, and the number of contested and uncontested primaries.
+
+## Tables 3, A3, A5, and A7: Various Regressions and Proportions
+
+-   Variables `close350not2500` and `ageunder50` are generated to represent treatment conditions and age groups, respectively.
+-   The dataset is structured for panel data analysis using `xtset strata`.
+-   A series of regression analyses are conducted to assess the impact of closeness treatments on voter turnout, interactions with age, and other covariates. Results are outputted to Excel files.
+-   The `include` command suggests that another Stata script (`Closeness_SubProgramPRTestRegression.do`) is called multiple times to run specific regression models.
+
+## Figure 1 and Table A4: Comparative Effectiveness of Different Treatments
+
+-   Regression analyses compare the effectiveness of different treatments on voter turnout.
+-   `lincom` commands are used to compare the treatment effects.
+-   Variables for plotting (`tvar`, `beta`, `beta_lowci`, `beta_hici`) are prepared, and a figure is generated using the `twoway` command, showing the estimated treatment effects with confidence intervals.
+-   The figure is exported as a PDF, and unnecessary variables are dropped.
+
+## Table A6: Proportion Voting by Experimental Conditions, State, and Strata
+
+-   Proportions of voting by experimental condition, state, and voter strata are calculated and outputted to an Excel file.
+-   The `foreach` and `forvalues` loops iterate over treatment conditions, states, and voter history categories to summarize the data.
+
+## Table A8: Relationship Between Intention to Vote and Actual Turnout
+
+-   A regression model explores the relationship between the intention to vote and actual turnout, considering the experimental condition and other covariates.
+-   Results are outputted to an Excel file.
+
+## Closing
+
+-   `log close`: Closes the log file, ending the recording of the session's output.
