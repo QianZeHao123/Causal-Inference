@@ -1,0 +1,236 @@
+---
+title: "Causal Inference"
+author: "Zehao Qian"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document: 
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **Messages Designed to Increase Perceived Electoral Closeness Increase Turnout**
+
+```{r}
+# --------------------------------------------------------
+## clear the environment var area
+# rm(list = ls())
+## clear all plots
+# graphics.off()
+## clear the console area
+#cat("\014")
+```
+
+Stata code explanation and R code implementation.
+
+## Read the data
+
+-   read DTA file
+
+-   Transfer it from Stata data file (\*.dta) to csv format
+
+```{r}
+# library(haven)
+# data = read_dta(
+#   "./data/APRCloseElections_Final_Publication_Replication_Dataset.dta"
+# )
+```
+
+```{r}
+# write.csv(data, file = "./data/data.csv")
+```
+
+```{r}
+data = read.csv('./data/data.csv')
+```
+
+This Stata code is part of a replication file for a study on the effects of perceived electoral closeness on voter turnout. The code performs various statistical analyses and outputs the results. Here's a breakdown of the code, part by part:
+
+## Appendix Table A1: Balance Tests
+
+1.  Multinomial logistic regression (`mlogit`) is performed to test the balance of covariates across different treatment groups. The `robust` option is used for robust standard errors, and `baseoutcome(1)` sets the reference category for the dependent variable.
+2.  Local macros (`local`) are used to store statistics like p-values (`mlogitp`), degrees of freedom (`mlogitdf`), and chi-squared values (`mlogitchi`) from the model.
+3.  A note (`tablenotes2`) is prepared, summarizing the balance test results, and displayed using the `display` command.
+4.  `putexcel` commands are used to write the balance test results to an Excel file, creating a table with variable names, treatment groups, means, standard deviations, and the note prepared earlier.
+
+```{r}
+library(nnet)
+mlogit_model <-
+  multinom(
+    a_phone_treat_relplacebo_passed ~ d_yearssincereg + d_yearssincereg_miss
+    + d_electiondayage + d_gender_male + d_gender_unknown + d_race_black
+    + d_race_latino + d_race_miss + d_race_other + d_genvotes + d_primvotes
+    + d_specvotes,
+    data = data,
+    weights = data$weight_allstatestreats
+  )
+```
+
+```{r}
+summary(mlogit_model)
+```
+
+```{r warning=FALSE}
+library(dplyr)
+
+# Assuming 'data' is your DataFrame
+# Define the treatment groups and variables
+treatments <-
+  c("t_placebo", "t_info_only", "t_closeness_1", "t_closeness_2")
+variables <-
+  c(
+    "d_yearssincereg",
+    "d_yearssincereg_miss",
+    "d_electiondayage",
+    "d_gender_male",
+    "d_gender_unknown",
+    "d_race_black",
+    "d_race_latino",
+    "d_race_miss",
+    "d_race_other",
+    "d_genvotes",
+    "d_primvotes",
+    "d_specvotes"
+  )
+
+# Initialize an empty data frame for storing the summary statistics
+summary_df <-
+  data.frame(
+    Variable = character(),
+    Treatment = character(),
+    Mean = numeric(),
+    SD = numeric(),
+    stringsAsFactors = FALSE
+  )
+
+# Loop through variables and treatments
+for (var in variables) {
+  for (treat in treatments) {
+    treat_data <- data %>% filter(!!sym(treat) == 1)
+    mean_val <-
+      weighted.mean(treat_data[[var]], treat_data$weight_allstatestreats,
+                    na.rm = TRUE)
+    sd_val <- sd(treat_data[[var]], na.rm = TRUE)
+    
+    # Add the summary statistics to the data frame
+    summary_df <-
+      rbind(
+        summary_df,
+        data.frame(
+          Variable = var,
+          Treatment = treat,
+          Mean = mean_val,
+          SD = sd_val
+        )
+      )
+  }
+}
+
+# Add observations count for each treatment
+obs_counts <-
+  sapply(treatments, function(treat)
+    sum(data[[treat]] == 1, na.rm = TRUE))
+obs_df <-
+  data.frame(
+    Variable = "Observations",
+    Treatment = treatments,
+    Mean = obs_counts,
+    SD = NA
+  )
+
+# Combine summary statistics and observations count
+final_df <- rbind(summary_df, obs_df)
+TableA1_BalanceTests = final_df
+
+# Save the data frame to a CSV file
+write.csv(TableA1_BalanceTests,
+          "./result/TableA1-BalanceTests.csv",
+          row.names = FALSE)
+```
+
+```{r warning=FALSE}
+# clear variables
+remove(obs_df,
+       summary_df,
+       mean_val,
+       obs_counts,
+       sd_val,
+       treat,
+       treatments,
+       var,
+       variables,
+       final_df)
+```
+
+## Table 2: Differences in Election and Turnout Context Across States
+
+1.  `sum` commands calculate the turnout rates for placebo subjects in various states. Local macros store these proportions.
+2.  Another `putexcel` set of commands creates an Excel table summarizing these turnout rates, along with information about the primary date, number of congressional districts, and the number of contested and uncontested primaries.
+
+```{r}
+# Assuming 'data' is your DataFrame
+# Calculate turnout rates for placebo subjects by state
+turnout_rates <- data %>%
+  filter(t_placebo == 1) %>%
+  group_by(vf_state) %>%
+  summarise(Turnout_Rate = mean(voted_2014_primary, na.rm = TRUE) * 100) %>%
+  filter(vf_state %in% c("MA", "MI", "MN", "MO", "NH", "TN", "WI"))
+
+# Define the state context information
+state_context <- data.frame(
+  State = c("Massachusetts", "Michigan", "Minnesota",
+            "Missouri", "New Hampshire", "Tennessee", "Wisconsin"),
+  Primary_Date = c("September 9", "August 5", "August 12",
+                   "August 5", "September 9", "August 7", "August 12"),
+  Number_of_Congressional_Districts = c(9, 14, 8, 8, 2, 9, 8),
+  Democratic_Contested = c(2, 5, 1, 4, 0, 3, 3),
+  Republican_Contested = c(1, 8, 2, 6, 2, 8, 5),
+  Democratic_Uncontested = c(7, 9, 2, 3, 0, 5, 0),
+  Republican_Uncontested = c(2, 6, 1, 1, 0, 1, 0)
+)
+
+# Merge turnout rates with the state context information
+final_table <- cbind(state_context, turnout_rates)
+
+# Rename and reorder columns to match the desired output
+final_table <- final_table %>%
+  select(State, Turnout_Rate,Primary_Date,
+         Number_of_Congressional_Districts, 
+         Democratic_Contested, Republican_Contested, 
+         Democratic_Uncontested,
+         Republican_Uncontested)
+Table2_StateContext = final_table
+# Save the table as a CSV file
+write.csv(Table2_StateContext, "./result/Table2-StateContext.csv",
+          row.names = FALSE)
+```
+
+```{r warning=FALSE}
+remove(turnout_rates, state_context, final_table)
+```
+
+## Tables 3, A3, A5, and A7: Various Regressions and Proportions
+
+-   Variables `close350not2500` and `ageunder50` are generated to represent treatment conditions and age groups, respectively.
+-   The dataset is structured for panel data analysis using `xtset strata`.
+-   A series of regression analyses are conducted to assess the impact of closeness treatments on voter turnout, interactions with age, and other covariates. Results are outputted to Excel files.
+-   The `include` command suggests that another Stata script (`Closeness_SubProgramPRTestRegression.do`) is called multiple times to run specific regression models.
+
+## Figure 1 and Table A4: Comparative Effectiveness of Different Treatments
+
+-   Regression analyses compare the effectiveness of different treatments on voter turnout.
+-   `lincom` commands are used to compare the treatment effects.
+-   Variables for plotting (`tvar`, `beta`, `beta_lowci`, `beta_hici`) are prepared, and a figure is generated using the `twoway` command, showing the estimated treatment effects with confidence intervals.
+-   The figure is exported as a PDF, and unnecessary variables are dropped.
+
+## Table A6: Proportion Voting by Experimental Conditions, State, and Strata
+
+-   Proportions of voting by experimental condition, state, and voter strata are calculated and outputted to an Excel file.
+-   The `foreach` and `forvalues` loops iterate over treatment conditions, states, and voter history categories to summarize the data.
+
+## Table A8: Relationship Between Intention to Vote and Actual Turnout
+
+-   A regression model explores the relationship between the intention to vote and actual turnout, considering the experimental condition and other covariates.
+-   Results are outputted to an Excel file.

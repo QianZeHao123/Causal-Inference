@@ -79,7 +79,7 @@ local t_closeness_2n `r(N)'
 putexcel A`row' = "Observations" B`row' = "`t_placebon'" C`row' = "`t_info_onlyn'" D`row' = "`t_closeness_1n'" E`row' = "`t_closeness_2n'"
 local ++row
 putexcel A`row' = "`tablenotes2'"
-
+/* ---------------------------------------------------------------------------------------------------------------------- */
 
 ********************************************************************************
 ** Table 2. Differences in Election and Turnout Context Across States
