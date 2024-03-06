@@ -61,7 +61,7 @@
 
 = Introduction
 
-#lorem(60)
+#lorem(60)@Biggers2024
 
 #lorem(60)
 
@@ -78,3 +78,7 @@
 == Work 2
 
 #lorem(500)
+
+
+
+#bibliography("references.bib")
