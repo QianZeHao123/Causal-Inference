@@ -8,7 +8,7 @@
   // Insert your abstract after the colon, wrapped in brackets.
   // Example: `abstract: [This is my abstract...]`
   abstract: "In Formative, I'm trying to extend the reproduction of 'Messages Designed to Increase Perceived Electoral Closeness Increase Turnout'. This paper investigates the impact of perceived electoral closeness on voter turnout. It discusses the theoretical underpinnings related to voter behavior and electoral closeness, and addresses the limitations of previous studies by conducting a large-scale field experiment across seven states. The experiment involved sending telephone messages to registrants, comparing those who received messages suggesting elections are usually decided by a smaller number of votes (thus closer) with those who received messages suggesting a larger deciding vote margin. The findings indicate that messages emphasizing the closeness of elections significantly increase voter turnout, suggesting that perceived electoral closeness can indeed motivate more people to vote.",
-  date: "March 6, 2024",
+  date: "March 8, 2024",
 )
 
 // We generated the example code below so you can see how
