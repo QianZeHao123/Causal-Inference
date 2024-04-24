@@ -11,6 +11,10 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Appendix 0 Research Question
+
+**"What is the impact of narrowly winning an election on future policy changes or reelection success?"**
+
 # Appendix 1 Read the .dta file
 
 Data Resource: <https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/567RS6>
@@ -25,7 +29,7 @@ library(haven)
 rd = read_dta("./data/RD_IP.dta")
 ```
 
-## 1.2 Variable Explaination
+## 1.2 Variable Explanation
 
 1.  **StAlphCd** - State Alpha Code: Abbreviation of the state.
 2.  **CDNumAtL** - Congressional District Number at Large.
@@ -94,3 +98,88 @@ rd = read_dta("./data/RD_IP.dta")
 ```
 
 # Appendix 2 Exploratory Data Analysis
+
+## 2.1 **Load Required Libraries**
+
+```{r message=FALSE, warning=FALSE}
+# Load necessary libraries from tidyverse individually
+# For creating visualizations
+# For data manipulation
+library(dplyr)
+# # For reading CSV data
+# library(readr)
+# For data tidying
+library(tidyr)
+# # For functional programming tools
+# library(purrr)
+# # For categorical variable handling
+# library(forcats)
+# # For date-time manipulation, useful in time series analysis
+# library(lubridate)
+
+# Libraries for causal inference
+# For regression discontinuity designs
+library(rdd)
+# For difference-in-differences analysis with multiple groups and time periods
+library(DIDmultiplegt)
+# For synthetic control method
+library(Synth)
+```
+
+## 2.2 **Inspect the Dataset**
+
+```{r}
+# View the first few rows of the dataset
+# head(data)
+# Get a summary of the dataset
+# summary(data)
+# Check the structure of the dataset
+# str(data)
+```
+
+## 2.3 **Initial Exploratory Data Analysis**
+
+```{r message=FALSE, warning=FALSE}
+# Plotting histograms for continuous variables
+# such as vote percentages and differences
+library(ggplot2)
+rd %>% 
+  select(DifDPct, DemPct, IPPctPrv, VoteTotW, VoteTotL) %>% 
+  gather(key = "variable", value = "value") %>% 
+  ggplot(aes(x = value)) +
+  geom_histogram(bins = 30, fill = "blue", alpha = 0.7) +
+  facet_wrap(~variable, scales = "free_x")
+```
+
+```{r message=FALSE, warning=FALSE}
+# Box plots for comparing incumbent vs. non-incumbent vote totals
+rd %>%
+  ggplot(aes(
+    x = factor(IPwin),
+    y = VoteTotW,
+    fill = factor(IPwin)
+  )) +
+  geom_boxplot() +
+  labs(x = "Incumbent Won",
+       y = "Vote Total for Winner",
+       title = "Distribution of Vote Totals by Incumbency")
+```
+
+```{r fig.height=8.5, fig.width=6}
+# Checking for missing values visually
+rd %>% 
+  summarise_all(funs(sum(is.na(.)))) %>%
+  gather(key = "variable", value = "n_missing") %>%
+  ggplot(aes(x = variable, y = n_missing)) +
+  geom_col() +
+  coord_flip() +
+  labs(x = "Variable",
+       y = "Number of Missing Values",
+       title = "Missing Data in Each Variable")
+```
+
+# Appendix 3 **Regression Discontinuity Design**
+
+# Appendix 4 **Difference in Differences**
+
+# Appendix 5 Synthetic Control
