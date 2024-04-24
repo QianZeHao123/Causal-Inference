@@ -28,6 +28,4 @@
 
 = Introduction
 
-
-
 #bibliography("references.bib")
