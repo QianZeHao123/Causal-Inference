@@ -92,3 +92,5 @@ rd = read_dta("./data/RD_IP.dta")
 ```{r}
 # write.csv(rd, "./data/RD_IP.csv", row.names = FALSE)
 ```
+
+# Appendix 2 Exploratory Data Analysis
