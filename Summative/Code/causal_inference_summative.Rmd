@@ -26,7 +26,7 @@ Data Resource: <https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.
 setwd(getwd())
 # install.packages('haven')
 library(haven)
-rd = read_dta("./data/RD_IP.dta")
+data = read_dta("./data/RD_IP.dta")
 ```
 
 ## 1.2 Variable Explanation
@@ -94,7 +94,7 @@ rd = read_dta("./data/RD_IP.dta")
 61. **DifPVIP** - Difference in Presidential Vote share attributed to the incumbent party, averaged over the decade.
 
 ```{r}
-# write.csv(rd, "./data/RD_IP.csv", row.names = FALSE)
+write.csv(data, "./data/RD_IP.csv", row.names = FALSE)
 ```
 
 # Appendix 2 Exploratory Data Analysis
@@ -165,7 +165,7 @@ rd %>%
        title = "Distribution of Vote Totals by Incumbency")
 ```
 
-```{r fig.height=8.5, fig.width=6}
+```{r fig.height=8.5, fig.width=6, message=FALSE, warning=FALSE}
 # Checking for missing values visually
 rd %>% 
   summarise_all(funs(sum(is.na(.)))) %>%
@@ -179,6 +179,40 @@ rd %>%
 ```
 
 # Appendix 3 **Regression Discontinuity Design**
+
+```{r}
+data.rdd = data %>%
+  select(CDNumAtL, YearElec, DemPct, VoteTotW, close05) %>%
+  mutate(close05 = if_else(is.na(close05), 0, close05)) %>%
+  drop_na() %>%
+  mutate(treatment = if_else(DemPct > 50, 1, 0))
+```
+
+```{r}
+# Check the data after adjustment
+# glimpse(data.rdd)
+```
+
+```{r}
+# Re-plot to visualize the potential discontinuity
+# at the cutoff with adjusted data
+ggplot(data.rdd, aes(
+  x = DemPct,
+  y = VoteTotW,
+  color = as.factor(treatment)
+)) +
+  geom_point(alpha = 0.5) +
+  geom_vline(xintercept = 50,
+             linetype = "dashed",
+             color = "red") +
+  labs(title = "Vote Totals of Democratic Vote Percentage",
+       subtitle = "Red line represents the cutoff at 50%",
+       color = "Treatment Status")
+```
+
+```{r message=FALSE, warning=FALSE}
+library(rddtools)
+```
 
 # Appendix 4 **Difference in Differences**
 
