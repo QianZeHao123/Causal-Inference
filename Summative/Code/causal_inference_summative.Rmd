@@ -13,7 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Appendix 0 Research Question
 
-**"What is the impact of narrowly winning an election on future policy changes or reelection success?"**
+“The impact on Final Turnout Rate by Election Swing”
 
 # Appendix 1 Read the .dta file
 
@@ -94,12 +94,12 @@ data = read_dta("./data/RD_IP.dta")
 61. **DifPVIP** - Difference in Presidential Vote share attributed to the incumbent party, averaged over the decade.
 
 ```{r}
-write.csv(data, "./data/RD_IP.csv", row.names = FALSE)
+# write.csv(data, "./data/RD_IP.csv", row.names = FALSE)
 ```
 
 # Appendix 2 Exploratory Data Analysis
 
-## 2.1 **Load Required Libraries**
+## 2.1 Load Required Libraries
 
 ```{r message=FALSE, warning=FALSE}
 # Load necessary libraries from tidyverse individually
@@ -110,23 +110,9 @@ library(dplyr)
 # library(readr)
 # For data tidying
 library(tidyr)
-# # For functional programming tools
-# library(purrr)
-# # For categorical variable handling
-# library(forcats)
-# # For date-time manipulation, useful in time series analysis
-# library(lubridate)
-
-# Libraries for causal inference
-# For regression discontinuity designs
-library(rdd)
-# For difference-in-differences analysis with multiple groups and time periods
-library(DIDmultiplegt)
-# For synthetic control method
-library(Synth)
 ```
 
-## 2.2 **Inspect the Dataset**
+## 2.2 Inspect the Dataset
 
 ```{r}
 # View the first few rows of the dataset
@@ -137,37 +123,12 @@ library(Synth)
 # str(data)
 ```
 
-## 2.3 **Initial Exploratory Data Analysis**
-
-```{r message=FALSE, warning=FALSE}
-# Plotting histograms for continuous variables
-# such as vote percentages and differences
-library(ggplot2)
-rd %>% 
-  select(DifDPct, DemPct, IPPctPrv, VoteTotW, VoteTotL) %>% 
-  gather(key = "variable", value = "value") %>% 
-  ggplot(aes(x = value)) +
-  geom_histogram(bins = 30, fill = "blue", alpha = 0.7) +
-  facet_wrap(~variable, scales = "free_x")
-```
-
-```{r message=FALSE, warning=FALSE}
-# Box plots for comparing incumbent vs. non-incumbent vote totals
-rd %>%
-  ggplot(aes(
-    x = factor(IPwin),
-    y = VoteTotW,
-    fill = factor(IPwin)
-  )) +
-  geom_boxplot() +
-  labs(x = "Incumbent Won",
-       y = "Vote Total for Winner",
-       title = "Distribution of Vote Totals by Incumbency")
-```
+Check the missing values:
 
 ```{r fig.height=8.5, fig.width=6, message=FALSE, warning=FALSE}
 # Checking for missing values visually
-rd %>% 
+library(ggplot2)
+data %>% 
   summarise_all(funs(sum(is.na(.)))) %>%
   gather(key = "variable", value = "n_missing") %>%
   ggplot(aes(x = variable, y = n_missing)) +
@@ -178,42 +139,248 @@ rd %>%
        title = "Missing Data in Each Variable")
 ```
 
-# Appendix 3 **Regression Discontinuity Design**
+## 2.3 Initial Exploratory Data Analysis
 
-```{r}
-data.rdd = data %>%
-  select(CDNumAtL, YearElec, DemPct, VoteTotW, close05) %>%
-  mutate(close05 = if_else(is.na(close05), 0, close05)) %>%
-  drop_na() %>%
-  mutate(treatment = if_else(DemPct > 50, 1, 0))
-```
-
-```{r}
-# Check the data after adjustment
-# glimpse(data.rdd)
-```
-
-```{r}
-# Re-plot to visualize the potential discontinuity
-# at the cutoff with adjusted data
-ggplot(data.rdd, aes(
-  x = DemPct,
-  y = VoteTotW,
-  color = as.factor(treatment)
-)) +
-  geom_point(alpha = 0.5) +
-  geom_vline(xintercept = 50,
-             linetype = "dashed",
-             color = "red") +
-  labs(title = "Vote Totals of Democratic Vote Percentage",
-       subtitle = "Red line represents the cutoff at 50%",
-       color = "Treatment Status")
+```{r message=FALSE, warning=FALSE}
+# Plotting histograms for continuous variables
+# such as vote percentages and differences
+library(ggplot2)
+data %>% 
+  select(DemPct) %>% 
+  gather(key = "variable", value = "value") %>% 
+  ggplot(aes(x = value)) +
+  geom_histogram(bins = 30, fill = "blue", alpha = 0.7) +
+  facet_wrap(~variable, scales = "free_x")
 ```
 
 ```{r message=FALSE, warning=FALSE}
-library(rddtools)
+ggplot(data, aes(x = ElcSwing)) +
+  geom_histogram(binwidth = 0.1,
+                 fill = "grey",
+                 color = "black") +
+  theme_minimal() +
+  labs(title = "Histogram of Electoral Swing",
+       subtitle = paste("Missing values: ",
+                        sum(is.na(data$ElcSwing))),
+       x = "Electoral Swing",
+       y = "Frequency")
 ```
 
-# Appendix 4 **Difference in Differences**
+# Appendix 3 DiD
 
-# Appendix 5 Synthetic Control
+## 3.1 The Dataset
+
+```{r}
+data.did.current = data %>%
+  select(DemWin, DWinPrv, DemPct, DSpndPct,
+         DDonaPct, YearElec, StAlphCd,
+         GovWkPct, UrbanPct, ElcSwing, StPOAbrv
+  ) %>%
+  drop_na() %>%
+  mutate(Time = 0)
+
+data.did.next = data %>%
+  select(DWinNxt, DemWin, DPctNxt, DSpndPct,
+         DDonaPct, YearElec, StAlphCd,
+         GovWkPct, UrbanPct, ElcSwing, StPOAbrv
+  ) %>%
+  drop_na() %>%
+  mutate(Time = 1)
+
+data.did.next = data.did.next %>%
+  rename(DemWin = DWinNxt,
+         DWinPrv = DemWin,
+         DemPct = DPctNxt)
+
+data.did.all = bind_rows(data.did.current, data.did.next)
+```
+
+**Absolute Value of Election Swing**
+
+```{r}
+data.did.all.abs = data.did.all %>%
+  mutate(Treatment = ifelse(abs(ElcSwing) > 5, 1, 0))
+```
+
+**Pos/Neg Value of Election Swing**
+
+```{r}
+data.did.all.posneg = data.did.all %>%
+  mutate(TreatmentPos = ifelse(ElcSwing > 5, 1, 0)) %>%
+  mutate(TreatmentNeg = ifelse(ElcSwing < -5, 1, 0))
+```
+
+## 3.2 First Differences
+
+```{r message=FALSE, warning=FALSE}
+differences <- data.did.all.posneg %>%
+  group_by(Time, TreatmentNeg) %>%
+  summarise(DemPct = mean(DemPct, na.rm = TRUE))
+differences
+```
+
+### 3.2.1 The Average Treatment Effect (ATT)
+
+```{r}
+T0Trt0 = differences[1, 3]
+T0Trt1 = differences[2, 3]
+T1Trt0 = differences[3, 3]
+T1Trt1 = differences[4, 3]
+(T1Trt1-T1Trt0)-(T0Trt1-T0Trt0)
+```
+
+### 3.2.2 Counterfactual Outcome
+
+```{r}
+# Calculate counterfactual outcome
+Trt1_counterfactual = tibble(
+  Time = c(0, 1),
+  TreatmentNeg = c(0, 1),
+  DemPct = as.numeric(c(T0Trt1, T0Trt1-(T0Trt0-T1Trt0)))
+)
+# combine them together
+did_plotdata = bind_rows(differences, Trt1_counterfactual)
+did_plotdata
+```
+
+```{r}
+differences %>%
+  ggplot(aes(x=Time, y=DemPct, group=TreatmentNeg)) +
+  geom_line(aes(color=TreatmentNeg), size=1.2)
+```
+
+## 3.3 Calculating the DiD Estimator via lm
+
+```{r}
+model.1 = lm(
+  DemPct ~ Time * Treatment + DemWin + DWinPrv +
+    DSpndPct + DDonaPct + GovWkPct + UrbanPct,
+  data = data.did.all.abs
+)
+```
+
+```{r}
+summary(model.1)
+```
+
+```{r}
+model.2 = lm(
+  DemPct ~ Time * TreatmentPos + Time * TreatmentNeg +
+    DemWin + DWinPrv + DSpndPct + DDonaPct +
+    GovWkPct + UrbanPct,
+  data = data.did.all.posneg
+)
+```
+
+```{r}
+summary(model.2)
+```
+
+```{r}
+model.3 = lm(
+  DemPct ~ Time:TreatmentNeg + TreatmentPos +
+    DemWin + DWinPrv + DSpndPct + DDonaPct +
+    GovWkPct + UrbanPct,
+  data = data.did.all.posneg
+)
+```
+
+```{r}
+summary(model.3)
+```
+
+# Appendix 4 Synthetic Control
+
+```{r}
+# install.packages("Synth")
+```
+
+```{r message=FALSE, warning=FALSE}
+data.synth.pre = data %>%
+  select(DemWin, DWinPrv, DemPct, DSpndPct,
+         DDonaPct, YearElec, StAlphCd, StPOAbrv,
+         GovWkPct, UrbanPct, ElcSwing, StAlphCd, YearElec
+  ) %>%
+  drop_na() %>%
+  mutate(Time = 0)
+
+data.synth.post = data %>%
+  select(DWinNxt, DemWin, DPctNxt, DSpndPct,
+         DDonaPct, YearElec, StAlphCd, StPOAbrv,
+         GovWkPct, UrbanPct, ElcSwing, StAlphCd, YearElec
+  ) %>%
+  drop_na() %>%
+  mutate(Time = 1)
+
+data.synth.post = data.synth.post %>%
+  rename(DemWin = DWinNxt,
+         DWinPrv = DemWin,
+         DemPct = DPctNxt)
+
+data.synth.all <- bind_rows(data.synth.pre, data.synth.post)
+```
+
+```{r}
+# Define the treated unit - example: State with code 'CA'
+treated_unit <- "CA"
+```
+
+```{r}
+# Variables used as predictors
+predictor_vars <-
+  c("DemPct", "DSpndPct", "DDonaPct",
+    "GovWkPct", "UrbanPct")
+```
+
+```{r}
+is.data.frame(data.synth.all)
+```
+
+```{r}
+data.synth.all = as.data.frame(data.synth.all)
+class(data.synth.all)
+```
+
+```{r}
+# Check for missing data by unit and year
+library(dplyr)
+missing_data_check <- data.synth.all %>%
+  group_by(StAlphCd, YearElec) %>%
+  summarize_all(funs(sum(is.na(.)))) %>%
+  ungroup()
+
+# View summary of missing data
+print(missing_data_check)
+
+```
+
+```{r}
+# Remove units/years with missing data
+complete_cases_data <- data.synth.all %>%
+  group_by(StAlphCd, YearElec) %>%
+  filter(all(!is.na(c(DemPct, DSpndPct, DDonaPct, GovWkPct, UrbanPct, ElcSwing, DemWin)))) %>%
+  ungroup()
+```
+
+```{r}
+library(Synth)
+data.prep <- dataprep(
+  foo = complete_cases_data,
+  predictors = c("DemPct", "DSpndPct", "DDonaPct", "GovWkPct", "UrbanPct", "ElcSwing"),
+  predictors.op = "mean",
+  time.predictors.prior = 2000:2023,
+  special.predictors = list(
+    list("DemWin", 2000:2023, "mean")
+  ),
+  dependent = "DemWin",
+  unit.variable = "StAlphCd",
+  unit.names.variable = "StPOAbrv",
+  time.variable = "YearElec",
+  treatment.identifier = 1,
+  controls.identifier = setdiff(unique(complete_cases_data$StAlphCd), 1),
+  time.optimize.ssr = 1930:2023,  # Ensure this period is covered by your data
+  time.plot = min(complete_cases_data$YearElec):max(complete_cases_data$YearElec)
+)
+
+
+```
