@@ -146,11 +146,12 @@ data %>%
 # such as vote percentages and differences
 library(ggplot2)
 data %>% 
-  select(DemPct) %>% 
+  select(DemPct, DPctNxt) %>% 
   gather(key = "variable", value = "value") %>% 
   ggplot(aes(x = value)) +
   geom_histogram(bins = 30, fill = "blue", alpha = 0.7) +
-  facet_wrap(~variable, scales = "free_x")
+  facet_wrap(~variable, scales = "free_x") +
+  labs(title = "Histrogram of Democratic Vote Turnout Rate")
 ```
 
 ```{r message=FALSE, warning=FALSE}
@@ -165,10 +166,6 @@ ggplot(data, aes(x = ElcSwing)) +
        x = "Electoral Swing",
        y = "Frequency")
 ```
-
-# Appendix 3 DiD
-
-## 3.1 The Dataset
 
 ```{r}
 data.did.current = data %>%
@@ -191,9 +188,12 @@ data.did.next = data.did.next %>%
   rename(DemWin = DWinNxt,
          DWinPrv = DemWin,
          DemPct = DPctNxt)
-
 data.did.all = bind_rows(data.did.current, data.did.next)
 ```
+
+# Appendix 3 DiD
+
+## 3.1 The Dataset
 
 **Absolute Value of Election Swing**
 
@@ -333,54 +333,63 @@ predictor_vars <-
 ```
 
 ```{r}
-is.data.frame(data.synth.all)
-```
-
-```{r}
-data.synth.all = as.data.frame(data.synth.all)
-class(data.synth.all)
-```
-
-```{r}
-# Check for missing data by unit and year
-library(dplyr)
-missing_data_check <- data.synth.all %>%
-  group_by(StAlphCd, YearElec) %>%
-  summarize_all(funs(sum(is.na(.)))) %>%
-  ungroup()
-
-# View summary of missing data
-print(missing_data_check)
-
-```
-
-```{r}
-# Remove units/years with missing data
-complete_cases_data <- data.synth.all %>%
-  group_by(StAlphCd, YearElec) %>%
-  filter(all(!is.na(c(DemPct, DSpndPct, DDonaPct, GovWkPct, UrbanPct, ElcSwing, DemWin)))) %>%
-  ungroup()
-```
-
-```{r}
 library(Synth)
-data.prep <- dataprep(
-  foo = complete_cases_data,
-  predictors = c("DemPct", "DSpndPct", "DDonaPct", "GovWkPct", "UrbanPct", "ElcSwing"),
-  predictors.op = "mean",
-  time.predictors.prior = 2000:2023,
-  special.predictors = list(
-    list("DemWin", 2000:2023, "mean")
-  ),
-  dependent = "DemWin",
-  unit.variable = "StAlphCd",
-  unit.names.variable = "StPOAbrv",
-  time.variable = "YearElec",
-  treatment.identifier = 1,
-  controls.identifier = setdiff(unique(complete_cases_data$StAlphCd), 1),
-  time.optimize.ssr = 1930:2023,  # Ensure this period is covered by your data
-  time.plot = min(complete_cases_data$YearElec):max(complete_cases_data$YearElec)
-)
+# data.prep <- dataprep(
+#   foo = complete_cases_data,
+#   predictors = c("DemPct", "DSpndPct", "DDonaPct", "GovWkPct", "UrbanPct", "ElcSwing"),
+#   predictors.op = "mean",
+#   time.predictors.prior = 2000:2008,
+#   special.predictors = list(
+#     list("DemWin", 2000:2008, "mean")
+#   ),
+#   dependent = "DemWin",
+#   unit.variable = "StAlphCd",
+#   unit.names.variable = "StPOAbrv",
+#   time.variable = "YearElec",
+#   treatment.identifier = 1,
+#   controls.identifier = setdiff(unique(complete_cases_data$StAlphCd), 1),
+#   time.optimize.ssr = 1930:2008,  # Ensure this period is covered by your data
+#   time.plot = min(complete_cases_data$YearElec):max(complete_cases_data$YearElec)
+# )
 
+```
 
+# Appendix 5 PSM
+
+```{r}
+# install.packages("MatchIt")
+```
+
+## 5.1 Model Building
+
+```{r}
+data.glm = data.synth.all %>%
+  mutate(TreatmentPos = ifelse(ElcSwing > 5, 1, 0)) %>%
+  mutate(TreatmentNeg = ifelse(ElcSwing < -5, 1, 0))
+model.psm = glm(TreatmentNeg ~ TreatmentPos +
+    DemWin + DWinPrv + DSpndPct + DDonaPct +
+    GovWkPct + UrbanPct, data = data.glm,
+    family = "binomial")
+```
+
+## 5.2 Propensity Score Calculation
+
+```{r}
+data.glm$pscore = predict(model.psm, type = "response")
+```
+
+## 5.3 Matching
+
+```{r}
+library(MatchIt)
+matchit_res <- matchit(TreatmentNeg ~ TreatmentPos +
+    DemWin + DWinPrv + DSpndPct + DDonaPct +
+      GovWkPct + UrbanPct,
+    data = data.glm,
+    method = "nearest", distance = "logit")
+matched_data <- match.data(matchit_res)
+```
+
+```{r}
+summary(matchit_res)
 ```
